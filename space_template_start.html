@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Spaceние - спаси Землю от метеоритов с друзьями</title>
+<script src="/cdn-cgi/apps/head/Wg-cHKvx6Q7S8DJggMaznCicJb0.js"></script><style>
+    canvas {
+      border: 1px solid black;
+      background: #0c1851;
+      display: block;
+      margin: auto;
+    }
+    progress, p {
+      text-align: center;
+      justify-content: center;
+      margin-top: 50px 0 20px;
+      font-size: 25px;
+      font-weight: 900;
+      font-family: sans-serif;
+      color: #0c1851;
+    }
+  </style>
+</head>
+<body>
+<p>HP = <span id="hp">100</span></p>
+<p>Shots = <span id="hitss">0</span></p>
+<p>True shot = <span id="shot">0</span></p>
+<p>Процент попаданий = <span id="pors">0</span></p>
+
+<progress class="uk-progress" id="hpP" value="" max="100"></progress>
+<canvas id="game" height="500" width="1000"></canvas>
+<script>
+    'use strict';
+    
+    // === Подготовка необходимых глобальных переменных ===
+		let deg = 0;
+    let canvas = document.querySelector('#game');
+    let ctx = canvas.getContext('2d');
+    var earthImg = new Image();
+    earthImg.src = "https://studyprograms.informatics.ru/api/game/earth.png";
+    
+    
+    let hp = document.querySelector("#hp");
+    let gameInterval = setInterval(function() {
+      let xhr = new XMLHttpRequest(); 
+      xhr.open("GET", "https://studyprograms.informatics.ru/api/game/getstate.php", true);
+      xhr.send();
+      xhr.addEventListener('readystatechange', function() {
+        if (xhr.status === 200 && xhr.readyState === 4){
+          let meteoritsArr = JSON.parse(xhr.responseText);
+          ctx.clearRect(0, 0, 1000, 500);
+          drawEarth();
+          let HP = meteoritsArr.hp;
+          hp.innerHTML = HP;
+          hpP.value = HP;
+          for(let meteorit of meteoritsArr.meteorits){
+            drawMeteorit(meteorit.x, meteorit.y)
+          }
+        }
+      });
+    }, 100);
+    var countShot = 0; var countHit = 0;
+    canvas.addEventListener('click', function(e) {
+      countShot++;
+      // Координаты клика (ИСПОЛЬЗУЙТЕ ИХ КАК КООРДИНАТЫ ВЫСТРЕЛА)
+      let clickX = Math.round(e.clientX - game.getBoundingClientRect().left);
+      let clickY = Math.round(e.clientY - game.getBoundingClientRect().top);
+      let xhrS = new XMLHttpRequest(); 
+      xhrS.open('GET', 'https://studyprograms.informatics.ru/api/game/shot.php?x=' + clickX + '&y=' + clickY, true);
+      xhrS.send();
+      xhrS.addEventListener('readystatechange', function() {
+        if (xhrS.status === 200 && xhrS.readyState === 4){
+          let shots = JSON.parse(xhrS.responseText);
+          let hit = shots.hits;
+          countShot += parseInt(hit, 10);
+          if (hit > 0)
+            countHit += parseInt(hit, 10);
+          hitss.innerHTML = countShot;
+          shot.innerHTML = countHit;
+
+          pors.innerHTML = countHit / countShot * 100 + "%"
+        }
+      });
+    });
+
+
+
+
+    
+    
+    
+    
+    // =============================================================================================================
+    // === ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ =================================================================================
+    // =============================================================================================================
+    
+    /* === Функция рисования вращающейся Земли на canvas === */
+    function drawEarth() {
+      ctx.save();
+      ctx.translate(500, 250);
+      ctx.rotate((deg % 360) * Math.PI / 180);
+      ctx.drawImage(earthImg, -25, -25, 50, 50);
+      ctx.restore();
+      deg += 10;
+    }
+
+    /* === Функция рисования метеорита в точке (x,y) на canvas === */
+    function drawMeteorit(x, y) {
+      // Рисуем обводку (свечение)
+      ctx.fillStyle = '#555d85';
+      ctx.beginPath();
+      ctx.arc(x, y, 4, 0, Math.PI * 2);
+      ctx.fill();
+      
+      // Рисуем ядро (центральная ярко белая часть)
+      ctx.fillStyle = '#fff';
+      ctx.beginPath();
+      ctx.arc(x, y, 2, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+  </script>
+</body>
+</html>
